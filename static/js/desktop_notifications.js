@@ -1,3 +1,5 @@
+THENOTIF = '';
+
 var DesktopNotifications = {
   enable: function() { // enables the line DesktopNotifications functionality (this is the defualt behavior)
     if (window.Notification) {
@@ -28,16 +30,18 @@ var DesktopNotifications = {
     return sval;
   },
   newMsg: function(authorName, author, text, sticky, timestamp, timestr){ // Creates a new desktop notification
-    if(DesktopNotifications.status == true){
-      if (window.webkitNotifications) {
-        window.webkitNotifications.createNotification("", authorName, text).show();
-      } else if (window.Notification) {
-        // I shouldn't show them from me..
-        if(author === clientVars.userId) return; // dont show my own!
-        new Notification(authorName, { icon: null, body: text });
+    var body = $('<textarea />').html(text).text();
+    if(DesktopNotifications.status == true && author !== clientVars.userId){
+      if(THENOTIF !== ''){
+        THENOTIF.close();
+      }
+      THENOTIF = new Notification(authorName, { icon: null, body: body });
+      THENOTIF.onclick = function(){
+        alert("Welcome back");
+        this.close();
       }
     }
-  }	
+  }
 }
 
 var postAceInit = function(hook, context){
@@ -56,7 +60,7 @@ var postAceInit = function(hook, context){
   }else if (DesktopNotifications.getParam("DesktopNotifications") == "false"){
     $('#options-desktopNotifications').attr('checked',false);
     DesktopNotifications.disable();
-  } 
+  }
   /* on click */
   $('#options-desktopNotifications').on('click', function() {
     if($('#options-desktopNotifications').is(':checked')) {
@@ -70,6 +74,9 @@ exports.postAceInit = postAceInit;
 
 exports.chatNewMessage = function(e, obj, cb){
   obj.authorName = obj.authorName || "SYSTEM MESSAGE:";
-  DesktopNotifications.newMsg(obj.authorName, obj.author, obj.text, obj.sticky, obj.timestamp, obj.timeStr);  
+  var now = new Date().getTime();
+  if (obj.timestamp+3000 > now && !document.hasFocus()){
+    DesktopNotifications.newMsg(obj.authorName, obj.author, obj.text, obj.sticky, obj.timestamp, obj.timeStr);
+  }
   cb([null]);
 }
